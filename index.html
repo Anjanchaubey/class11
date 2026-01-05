@@ -202,6 +202,38 @@
         </div>
     </div>
 
+    <!-- ABOUT MODAL -->
+    <div id="about-modal" class="hidden fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl relative">
+            <button onclick="document.getElementById('about-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 shadow-lg">
+                    M
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 mb-2">About This Website</h2>
+            </div>
+            <div class="space-y-4 text-center">
+                <div class="bg-slate-50 p-4 rounded-xl">
+                    <p class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-2">Made By</p>
+                    <p class="text-xl font-black text-emerald-600">ANJAN</p>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl">
+                    <p class="text-sm font-bold text-slate-600 uppercase tracking-wider mb-2">Developed By</p>
+                    <p class="text-xl font-black text-slate-900">ANJAN</p>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl">
+                    <p class="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-3">Contact Us</p>
+                    <a href="mailto:anjanchaubey0@gmail.com" class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Email Me
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- PROFILE SETTINGS MODAL -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm p-6 rounded-2xl shadow-2xl relative">
@@ -309,8 +341,12 @@
                 </div>
             </nav>
 
-            <!-- Logout -->
-            <div class="p-4 border-t border-slate-100">
+            <!-- About & Logout -->
+            <div class="p-4 border-t border-slate-100 space-y-2">
+                <button onclick="window.openAboutModal()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    About
+                </button>
                 <button onclick="window.handleLogout()" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     Sign Out
@@ -576,7 +612,7 @@
         let tempProfileImage = null; // To store base64 before saving
         
         // Gemini Config - FIXED VARIABLE NAME
-        const apiKey = "AIzaSyAknzSkg6GJusZslV-l9tV5GI3izzWb8u8"; // Runtime provided
+        const apiKey = "AIzaSyBgPkKMCNo_QQU8d_ukepzlESUE38tSMTQ"; // Runtime provided
         const modelName = "gemini-2.5-flash-preview-09-2025";
 
         // ==========================================
@@ -792,6 +828,10 @@
                     alert("Error: " + e.message);
                 }
             }
+        }
+
+        window.openAboutModal = () => {
+            document.getElementById('about-modal').classList.remove('hidden');
         }
 
         // ==========================================
