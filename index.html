@@ -174,6 +174,7 @@
         .dark-mode #view-chat .border-slate-200 { border-color: #334155 !important; }
         .dark-mode #leaderboard-list > div:hover { background: #8B5CF6 !important; }
         .dark-mode #view-home .bg-white\/70 { background: #000000 !important; }
+        .dark-mode header.md\:hidden { background: #000000 !important; border-color: #334155 !important; }
     </style>
 </head>
 <body class="mesh-gradient flex flex-col h-screen overflow-hidden text-slate-800">
@@ -450,7 +451,7 @@
         <div id="main-content-wrapper" class="flex-grow flex flex-col h-full overflow-hidden transition-all duration-300 relative">
             
             <!-- Mobile Header (Visible only on mobile) -->
-            <header class="md:hidden h-16 flex items-center justify-between px-4 bg-black backdrop-blur border-b border-slate-700 shrink-0 z-40">
+            <header class="md:hidden h-16 flex items-center justify-between px-4 bg-white backdrop-blur border-b border-slate-200 shrink-0 z-40">
                 <button onclick="window.toggleSidebar()" class="p-2 text-slate-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
