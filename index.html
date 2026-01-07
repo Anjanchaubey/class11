@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MyndraAI | Elite Foundation Hub</title>
+    <link rel="icon" type="image/png" href="myndra_logo_white.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PUTER.JS Added Here for Free AI -->
     <script src="https://js.puter.com/v2/"></script>
@@ -182,6 +183,17 @@
     </style>
 </head>
 <body class="mesh-gradient flex flex-col h-screen overflow-hidden text-slate-800">
+
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen" class="fixed inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center z-[200]">
+        <div class="text-center">
+            <div class="w-24 h-24 mx-auto mb-6 animate-pulse">
+                <img src="myndra_logo_black.png" alt="MyndraAI" class="w-full h-full object-contain">
+            </div>
+            <h2 class="text-2xl font-black text-slate-900">Myndra<span class="text-emerald-600">AI</span></h2>
+            <p class="text-sm text-slate-500 mt-2 font-medium">Loading your workspace...</p>
+        </div>
+    </div>
 
     <!-- AUTH SCREEN (Overlay) -->
     <div id="auth-screen" class="fixed inset-0 bg-white/30 backdrop-blur-xl flex items-center justify-center p-4">
@@ -961,6 +973,8 @@
         // ==========================================
         
         onAuthStateChanged(auth, async (user) => {
+            document.getElementById('loading-screen').classList.add('hidden');
+            
             if (user) {
                 currentUser = user;
                 document.getElementById('auth-screen').classList.add('hidden');
