@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>World Chat | MyndraAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .message-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .online-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .ai-response h1, .ai-response h2, .ai-response h3 { font-weight: bold; margin-top: 0.75em; margin-bottom: 0.4em; }
+        .ai-response h1 { font-size: 1.2em; }
+        .ai-response h2 { font-size: 1.1em; }
+        .ai-response h3 { font-size: 1em; }
+        .ai-response ul, .ai-response ol { margin-left: 1.2em; margin-top: 0.4em; margin-bottom: 0.4em; font-size: 0.875rem; }
+        .ai-response li { margin-bottom: 0.2em; }
+        .ai-response p { margin-bottom: 0.5em; line-height: 1.6; font-size: 0.875rem; }
+        .ai-response code { background: rgba(0,0,0,0.1); padding: 2px 4px; border-radius: 3px; font-size: 0.8em; }
+        .ai-response pre { background: rgba(0,0,0,0.1); padding: 10px; border-radius: 6px; overflow-x: auto; margin: 0.5em 0; font-size: 0.8rem; }
+        .ai-response pre code { background: none; padding: 0; }
+        .ai-response strong { font-weight: 700; }
+        .ai-response em { font-style: italic; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden">
+    
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg">
+                    💬
+                </div>
+                <h1 class="text-2xl font-black text-slate-900">World Chat</h1>
+                <p class="text-sm text-slate-500 font-medium">Connect with fellow students</p>
+            </div>
+
+            <div class="space-y-4">
+                <input type="email" id="login-email" placeholder="Email" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+                <input type="password" id="login-password" placeholder="Password" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+                <button onclick="handleLogin()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    Join Chat
+                </button>
+                <button onclick="handleAnonymousLogin()" class="w-full py-3 bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 hover:bg-slate-200 transition-colors">
+                    Continue as Guest
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Interface -->
+    <div id="chat-container" class="hidden h-full flex flex-col">
+        
+        <!-- Header -->
+        <header class="bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </a>
+                <div>
+                    <h2 class="font-bold text-slate-900 flex items-center gap-2">
+                        🌍 World Chat
+                        <span class="w-2 h-2 bg-green-500 rounded-full online-pulse"></span>
+                    </h2>
+                    <p class="text-xs text-slate-500"><span id="online-count">0</span> online</p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="text-sm font-bold text-red-500 hover:text-red-600">
+                Exit
+            </button>
+        </header>
+
+        <!-- Messages Area -->
+        <div id="messages-container" class="flex-grow overflow-y-auto p-4 space-y-3 chat-scroll bg-gradient-to-br from-slate-50 to-slate-100">
+            <!-- Messages will be injected here -->
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white border-t border-slate-200 p-4 shrink-0">
+            <div class="flex gap-2 max-w-4xl mx-auto">
+                <input type="file" id="file-input" accept="image/*,.pdf" class="hidden" onchange="handleFileSelect(event)">
+                <div class="relative flex-grow">
+                    <button onclick="toggleAttachMenu()" class="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 text-slate-600 rounded-lg flex items-center justify-center hover:bg-slate-200 transition-all z-10">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    </button>
+                    <div id="attach-menu" class="hidden absolute bottom-14 left-0 bg-white rounded-xl shadow-lg border border-slate-200 p-2 w-48 z-20">
+                        <button onclick="document.getElementById('file-input').click(); toggleAttachMenu()" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            🖼️ Image
+                        </button>
+                        <button onclick="document.getElementById('file-input').click(); toggleAttachMenu()" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            📄 PDF
+                        </button>
+                        <button onclick="insertCommand('@ai '); toggleAttachMenu()" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            🤖 Ask AI
+                        </button>
+                        <button onclick="insertCommand('@clear'); toggleAttachMenu()" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            🧹 Clear AI
+                        </button>
+                        <button onclick="insertCommand('@summary'); toggleAttachMenu()" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            📊 Summary
+                        </button>
+                    </div>
+                    <input 
+                        id="message-input" 
+                        type="text" 
+                        placeholder="Type your message... (use @ai for AI help)" 
+                        class="w-full bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none"
+                        onkeypress="if(event.key==='Enter') sendMessage()"
+                        oninput="handleInputChange()"
+                    >
+                    <div id="suggestions-menu" class="hidden absolute bottom-14 left-0 bg-white rounded-xl shadow-lg border border-slate-200 p-2 w-64 z-20">
+                        <button onclick="selectSuggestion('@ai ')" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            🤖 @ai - Ask AI a question
+                        </button>
+                        <button onclick="selectSuggestion('@clear')" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            🧹 @clear - Clear AI messages
+                        </button>
+                        <button onclick="selectSuggestion('@summary')" class="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-lg text-sm font-medium text-slate-700 flex items-center gap-2">
+                            📊 @summary - Summarize chat
+                        </button>
+                    </div>
+                </div>
+                <button onclick="sendMessage()" class="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center hover:shadow-lg transition-all shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Fullscreen Modal -->
+    <div id="image-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onclick="closeImageModal()">
+        <button class="absolute top-4 right-4 text-white text-3xl font-bold hover:text-gray-300">&times;</button>
+        <img id="modal-image" src="" class="max-w-full max-h-full object-contain" onclick="event.stopPropagation()">
+    </div>
+
+    <!-- MathJax Configuration -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$']],
+            displayMath: [['$$', '$$']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'style', 'textarea', 'pre', 'code']
+        }
+    };
+    </script>
+    <!-- Puter.js SDK -->
+    <script src="https://js.puter.com/v2/"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded, onChildRemoved, onValue, serverTimestamp, set, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCYY2GQqS0tCXb7Oxw8AWXhpexq9e8VRUs",
+            authDomain: "aspirehub-32863.firebaseapp.com",
+            projectId: "aspirehub-32863",
+            storageBucket: "aspirehub-32863.appspot.com",
+            messagingSenderId: "686810111182",
+            appId: "1:686810111182:web:4290b4b1b6e64934ec449f",
+            databaseURL: "https://aspirehub-32863-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const rtdb = getDatabase(app);
+        const db = getFirestore(app);
+        const appId = 'myndra-default';
+
+        let currentUser = null;
+        let userProfile = { username: 'Guest' };
+        let messagesLoaded = false;
+
+        // Auth State
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadUserProfile(user.uid);
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('chat-container').classList.remove('hidden');
+                
+                // Set user online
+                const userStatusRef = ref(rtdb, `presence/${user.uid}`);
+                set(userStatusRef, {
+                    username: userProfile.username,
+                    online: true,
+                    lastSeen: serverTimestamp()
+                });
+                onDisconnect(userStatusRef).set({
+                    username: userProfile.username,
+                    online: false,
+                    lastSeen: serverTimestamp()
+                });
+
+                if (!messagesLoaded) {
+                    loadMessages();
+                    trackOnlineUsers();
+                    messagesLoaded = true;
+                }
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('chat-container').classList.add('hidden');
+            }
+        });
+
+        async function loadUserProfile(uid) {
+            try {
+                const userRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'data');
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    userProfile = snap.data();
+                } else {
+                    userProfile = { username: 'User' + Math.floor(Math.random() * 1000) };
+                }
+            } catch (e) {
+                userProfile = { username: 'Guest' + Math.floor(Math.random() * 1000) };
+            }
+        }
+
+        window.handleLogin = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (e) {
+                alert("Login failed: " + e.message);
+            }
+        };
+
+        window.handleAnonymousLogin = async () => {
+            try {
+                await signInAnonymously(auth);
+            } catch (e) {
+                alert("Failed to join: " + e.message);
+            }
+        };
+
+        window.handleLogout = () => {
+            if (confirm("Leave the chat?")) {
+                signOut(auth);
+            }
+        };
+
+        function loadMessages() {
+            const messagesRef = ref(rtdb, 'worldChat/messages');
+            const container = document.getElementById('messages-container');
+            
+            // Listen for all messages (existing + new)
+            onChildAdded(messagesRef, (snapshot) => {
+                const msg = snapshot.val();
+                if (!msg) return;
+                
+                const isMe = currentUser && msg.uid === currentUser.uid;
+                const isAI = msg.uid === 'ai-bot';
+                const msgId = snapshot.key;
+                
+                const msgEl = document.createElement('div');
+                msgEl.className = isAI ? 'message-enter w-full' : `message-enter flex ${isMe ? 'justify-end' : 'justify-start'}`;
+                msgEl.setAttribute('data-msg-id', msgId);
+                
+                const avatar = msg.photoUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${msg.username}`;
+                
+                let contentHtml = '';
+                if (msg.fileType === 'image') {
+                    contentHtml = `
+                        <img src="${msg.fileData}" class="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity mt-2" onclick="openImageModal('${msg.fileData}')" style="max-height: 300px;">
+                        ${msg.text ? `<p class="text-sm leading-relaxed break-words mt-2">${escapeHtml(msg.text)}</p>` : ''}
+                    `;
+                } else if (msg.fileType === 'pdf') {
+                    contentHtml = `
+                        <div class="bg-white/10 rounded-lg p-3 mt-2 flex items-center gap-3">
+                            <svg class="w-8 h-8 ${isMe ? 'text-purple-200' : 'text-red-500'}" fill="currentColor" viewBox="0 0 20 20"><path d="M4 18h12V6h-4V2H4v16zm-2 1V0h12l4 4v16H2v-1z"/><text x="6" y="14" font-size="6" fill="currentColor">PDF</text></svg>
+                            <div class="flex-grow">
+                                <div class="font-bold text-xs">${escapeHtml(msg.fileName)}</div>
+                                <div class="text-[10px] ${isMe ? 'text-purple-200' : 'text-slate-500'}">${formatFileSize(msg.fileSize)}</div>
+                            </div>
+                            <a href="${msg.fileData}" download="${msg.fileName}" class="px-3 py-1 ${isMe ? 'bg-white/20' : 'bg-purple-100 text-purple-600'} rounded-lg text-xs font-bold hover:opacity-80">Download</a>
+                        </div>
+                        ${msg.text ? `<p class="text-sm leading-relaxed break-words mt-2">${escapeHtml(msg.text)}</p>` : ''}
+                    `;
+                } else {
+                    const isAI = msg.uid === 'ai-bot';
+                    if (isAI) {
+                        contentHtml = `<div class="ai-response text-slate-700">${marked.parse(msg.text)}</div>`;
+                    } else {
+                        contentHtml = `<p class="text-xs leading-relaxed break-words">${escapeHtml(msg.text)}</p>`;
+                    }
+                }
+                
+                if (isAI) {
+                    msgEl.innerHTML = `
+                        <div class="w-full bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4 shadow-sm">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-lg">🤖</span>
+                                <span class="text-xs font-bold text-purple-600">AI Assistant</span>
+                            </div>
+                            ${contentHtml}
+                        </div>
+                    `;
+                } else {
+                    msgEl.innerHTML = `
+                        <div class="max-w-[75%] ${isMe ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' : 'bg-white text-slate-800'} rounded-2xl ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} p-3 shadow-sm relative group">
+                            <div class="flex items-center gap-2 mb-1">
+                                <img src="${avatar}" class="w-5 h-5 rounded-full">
+                                <span class="text-xs font-bold ${isMe ? 'text-purple-100' : 'text-slate-600'}">${escapeHtml(msg.username)}</span>
+                                <span class="text-[10px] ${isMe ? 'text-purple-200' : 'text-slate-400'}">${formatTime(msg.timestamp)}</span>
+                            </div>
+                            ${contentHtml}
+                            ${msg.uid !== 'ai-bot' && !msg.fileType ? `<button onclick="askAIAbout('${escapeHtml(msg.text).replace(/'/g, "&#39;")}')" class="absolute -bottom-2 ${isMe ? '-left-2' : '-right-2'} w-6 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full flex items-center justify-center text-xs hover:shadow-lg" title="Ask AI">🤖</button>` : ''}
+                            ${isMe ? `<button onclick="deleteMessage('${msgId}')" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs hover:bg-red-600">×</button>` : ''}
+                        </div>
+                    `;
+                }
+                
+                container.appendChild(msgEl);
+                if (msg.uid === 'ai-bot') {
+                    MathJax.typesetPromise([msgEl]).catch(err => console.log(err));
+                }
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            });
+
+            // Listen for deleted messages
+            onChildRemoved(messagesRef, (snapshot) => {
+                const msgId = snapshot.key;
+                const msgEl = container.querySelector(`[data-msg-id="${msgId}"]`);
+                if (msgEl) {
+                    msgEl.style.opacity = '0';
+                    msgEl.style.transform = 'scale(0.8)';
+                    msgEl.style.transition = 'all 0.3s';
+                    setTimeout(() => msgEl.remove(), 300);
+                }
+            });
+        }
+
+        window.handleFileSelect = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('File too large. Max size is 5MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const fileData = e.target.result;
+                const fileType = file.type.startsWith('image/') ? 'image' : 'pdf';
+                
+                const messagesRef = ref(rtdb, 'worldChat/messages');
+                await push(messagesRef, {
+                    uid: currentUser.uid,
+                    username: userProfile.username,
+                    photoUrl: userProfile.photoBase64 || null,
+                    text: '',
+                    fileType: fileType,
+                    fileData: fileData,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    timestamp: serverTimestamp()
+                });
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        };
+
+        window.openImageModal = (src) => {
+            document.getElementById('modal-image').src = src;
+            document.getElementById('image-modal').classList.remove('hidden');
+        };
+
+        window.closeImageModal = () => {
+            document.getElementById('image-modal').classList.add('hidden');
+        };
+
+        window.deleteMessage = async (msgId) => {
+            if (!confirm('Delete this message?')) return;
+            try {
+                const msgRef = ref(rtdb, `worldChat/messages/${msgId}`);
+                await remove(msgRef);
+            } catch (e) {
+                alert('Failed to delete message');
+            }
+        };
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            
+            if (!text || !currentUser) return;
+            
+            // Check if message starts with @ai
+            if (text.toLowerCase().startsWith('@ai ')) {
+                const question = text.substring(4).trim();
+                if (!question) return;
+                
+                // Send user's question to chat
+                const messagesRef = ref(rtdb, 'worldChat/messages');
+                await push(messagesRef, {
+                    uid: currentUser.uid,
+                    username: userProfile.username,
+                    photoUrl: userProfile.photoBase64 || null,
+                    text: text,
+                    timestamp: serverTimestamp()
+                });
+                
+                input.value = '';
+                
+                // Get AI response
+                try {
+                    const isLongAnswer = question.toLowerCase().includes('detail') || question.toLowerCase().includes('explain') || question.toLowerCase().includes('elaborate') || question.toLowerCase().includes('long');
+                    const prompt = isLongAnswer ? 
+                        `Always use LaTeX for mathematical expressions. Inline math → $...$, Block math → $$...$$. Never place LaTeX inside code blocks. ${question}` :
+                        `Always use LaTeX for mathematical expressions. Inline math → $...$, Block math → $$...$$. Never place LaTeX inside code blocks. Keep response concise and brief (2-3 sentences max). ${question}`;
+                    const response = await puter.ai.chat(prompt, { model: "gpt-5-nano" });
+                    const aiText = typeof response === 'string' ? response : (response.message?.content || String(response));
+                    
+                    // Send AI response to chat
+                    await push(messagesRef, {
+                        uid: 'ai-bot',
+                        username: '🤖 AI Assistant',
+                        photoUrl: null,
+                        text: aiText,
+                        timestamp: serverTimestamp()
+                    });
+                } catch (e) {
+                    console.error('AI Error:', e);
+                    await push(messagesRef, {
+                        uid: 'ai-bot',
+                        username: '🤖 AI Assistant',
+                        photoUrl: null,
+                        text: 'Sorry, I encountered an error processing your question.',
+                        timestamp: serverTimestamp()
+                    });
+                }
+                return;
+            }
+            
+            // Check if message is @clear
+            if (text.toLowerCase() === '@clear') {
+                input.value = '';
+                const messagesRef = ref(rtdb, 'worldChat/messages');
+                const snapshot = await onValue(messagesRef, async (snap) => {
+                    const now = Date.now();
+                    const oneHourAgo = now - (60 * 60 * 1000);
+                    const promises = [];
+                    
+                    snap.forEach((child) => {
+                        const msg = child.val();
+                        if (msg.uid === 'ai-bot' && msg.timestamp && msg.timestamp > oneHourAgo) {
+                            promises.push(remove(ref(rtdb, `worldChat/messages/${child.key}`)));
+                        }
+                    });
+                    
+                    await Promise.all(promises);
+                }, { onlyOnce: true });
+                return;
+            }
+            
+            // Check if message is @summary
+            if (text.toLowerCase() === '@summary') {
+                input.value = '';
+                const messagesRef = ref(rtdb, 'worldChat/messages');
+                await onValue(messagesRef, async (snap) => {
+                    const now = Date.now();
+                    const oneHourAgo = now - (60 * 60 * 1000);
+                    let chatHistory = '';
+                    
+                    snap.forEach((child) => {
+                        const msg = child.val();
+                        if (msg.timestamp && msg.timestamp > oneHourAgo && msg.text) {
+                            chatHistory += `${msg.username}: ${msg.text}\n`;
+                        }
+                    });
+                    
+                    if (chatHistory) {
+                        try {
+                            const response = await puter.ai.chat(`Always use LaTeX for mathematical expressions. Inline math → $...$, Block math → $$...$$. Never place LaTeX inside code blocks. Summarize this chat conversation from the last hour:\n\n${chatHistory}`, { model: "gpt-5-nano" });
+                            const aiText = typeof response === 'string' ? response : (response.message?.content || String(response));
+                            
+                            await push(messagesRef, {
+                                uid: 'ai-bot',
+                                username: '🤖 AI Assistant',
+                                photoUrl: null,
+                                text: aiText,
+                                timestamp: serverTimestamp()
+                            });
+                        } catch (e) {
+                            console.error('AI Error:', e);
+                        }
+                    }
+                }, { onlyOnce: true });
+                return;
+            }
+            
+            const messagesRef = ref(rtdb, 'worldChat/messages');
+            push(messagesRef, {
+                uid: currentUser.uid,
+                username: userProfile.username,
+                photoUrl: userProfile.photoBase64 || null,
+                text: text,
+                timestamp: serverTimestamp()
+            });
+            
+            input.value = '';
+        };
+
+        function trackOnlineUsers() {
+            const presenceRef = ref(rtdb, 'presence');
+            onValue(presenceRef, (snapshot) => {
+                let count = 0;
+                snapshot.forEach((child) => {
+                    if (child.val().online) count++;
+                });
+                document.getElementById('online-count').innerText = count;
+            });
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return 'now';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
+            return date.toLocaleDateString();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.askAIAbout = async (messageText) => {
+            const messagesRef = ref(rtdb, 'worldChat/messages');
+            try {
+                const response = await puter.ai.chat(`Always use LaTeX for mathematical expressions. Inline math → $...$, Block math → $$...$$. Never place LaTeX inside code blocks. Keep response concise and brief (2-3 sentences max). Verify or respond to this message: "${messageText}"`, { model: "gpt-5-nano" });
+                const aiText = typeof response === 'string' ? response : (response.message?.content || String(response));
+                
+                await push(messagesRef, {
+                    uid: 'ai-bot',
+                    username: '🤖 AI Assistant',
+                    photoUrl: null,
+                    text: aiText,
+                    timestamp: serverTimestamp()
+                });
+            } catch (e) {
+                console.error('AI Error:', e);
+            }
+        };
+
+        window.toggleAttachMenu = () => {
+            const menu = document.getElementById('attach-menu');
+            menu.classList.toggle('hidden');
+        };
+
+        window.insertCommand = (cmd) => {
+            const input = document.getElementById('message-input');
+            input.value = cmd;
+            input.focus();
+        };
+
+        window.handleInputChange = () => {
+            const input = document.getElementById('message-input');
+            const menu = document.getElementById('suggestions-menu');
+            if (input.value === '@') {
+                menu.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+            }
+        };
+
+        window.selectSuggestion = (cmd) => {
+            const input = document.getElementById('message-input');
+            input.value = cmd;
+            document.getElementById('suggestions-menu').classList.add('hidden');
+            input.focus();
+        };
+    </script>
+</body>
+</html>
